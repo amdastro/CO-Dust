@@ -5,18 +5,18 @@ import numpy as np
 
 
 # Set the default timestep, and the total simulation time
-dt_init = 1e3
-tmin = 1e4
-tmax = 1e6
+dt_init = 1e2
+tmin = 9e4
+tmax = 1e7
 #integrate after this time (later set it to integrate at given some physical conditions)
 t_integrate = 1.e5
 
 # Limit the percent of CO that can form in each timestep:
 percentCO = 1e-3
 # The amount of CO above which we apply the percent criteria
-CO_amount = 1e-3
+CO_min = 1e-2
 
-directory = 'tint_%.0e_dt_%.0e_percent%.0e_amt%.0e'%(t_integrate,dt_init,percentCO,CO_amount)
+directory = 'tint_%.0e_dt_%.0e_min%.0e_percent%.0e'%(t_integrate,dt_init,percentCO,CO_min)
 
 
 ''' The initial thermodynamics of the cold shell '''
