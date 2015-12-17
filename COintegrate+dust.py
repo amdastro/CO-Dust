@@ -31,13 +31,16 @@ Y_CO = ab.Y_CO_equil(par.Y_C_tot, par.Y_O_tot, n, K_ra, K_rd)
 Y_C_free = par.Y_C_tot - Y_CO
 Y_O_free = par.Y_O_tot - Y_CO
 Y_dust = 0
+# mass fractions are just A*Y, but dust mass fraction depends on grain size
+X_dust = 0.
+dNdt_grow = 0.
 n_C_free = Y_C_free * n
 n_O_free = Y_O_free * n
 int_flag = 0 # flag = 1 when integrating
 adap_flag = 0 # flag = 1 when dt is smaller than default
 
 #------------ Initial dust parameters ------------
-arraylen = 100000
+arraylen = 200000
 # size of grains:
 # initialize a large array, and make a bigger one later if you need to
 #size = np.zeros([2*(par.tmax-par.tmin)/par.dt_init])
@@ -61,18 +64,22 @@ t = par.tmin
 #------------- OUTPUT FILES -----------------------#
 # First open to overwrite previous - probably a better way to do this
 fractionfile = open("runs/%s/fractions.txt"%par.directory, 'w')
+massfracfile = open("runs/%s/massfrac.txt"%par.directory, 'w')
 ratesfile = open("runs/%s/rates.txt"%par.directory, 'w')
 thermofile = open("runs/%s/thermo.txt"%par.directory, 'w')
 # Then open for appending
 fractionfile = open("runs/%s/fractions.txt"%par.directory, 'a')
+massfracfile = open("runs/%s/massfrac.txt"%par.directory, 'a')
 ratesfile = open("runs/%s/rates.txt"%par.directory, 'a')
 thermofile = open("runs/%s/thermo.txt"%par.directory, 'a')
 # headers: 
-fractionfile.write("# t     Y_CO      Y_C_free     Y_O_free     Y_dust     int_flag    adap_flag     sat\n")
+fractionfile.write("# t     Y_CO      Y_C_free     Y_O_free      int_flag    adap_flag     sat\n")
+massfracfile.write("# t     X_CO      X_C_free     X_O_free     X_dust    dNdt_grow\n")
 ratesfile.write("# K_ra      K_therm     K_nontherm \n")
 thermofile.write("# T_cs     n      delta      R_cs       c_s  \n")
 # first line: 
 fractionfile.write("%.5f %.5f %.5f %.5f %.5f %i %i %.5e \n"%(t,Y_CO,Y_C_free,Y_O_free,Y_dust,int_flag,adap_flag,sat))
+massfracfile.write("%.5f %.5f %.5f %.5f %.5f %.5f \n"%(t,ph.A_CO*Y_CO,ph.A_C*Y_C_free,ph.A_O*Y_O_free,X_dust,dNdt_grow))
 ratesfile.write("%.5f %.5e %.5e \n"%(K_ra, K_th, K_nth))
 thermofile.write("%.5f %.5f %.5f %.2f %.5f \n"%(T_cs, n, delta, R_cs, c_s))
 
@@ -110,9 +117,10 @@ while t < par.tmax:
 				np.exp(-4*ph.cshape**3*ph.vC**2*ph.sigma**3/27./(ph.kB*T_cs)**3/(np.log(sat)**2))
 			dmu = ph.kB*T_cs*np.log(sat)
 			ncritical=np.maximum(8*ph.cshape**3*ph.vC**2*ph.sigma**3/27/dmu**3,2)
-			dYDdt_nucl = J*ncritical/n
-			delta_dust = dYDdt_nucl*dt 
-			while (np.absolute(delta_dust) > 0.1*Y_C_free+par.CO_min):
+			dCdt_nucl = J*ncritical
+			delta_nC = dCdt_nucl*dt
+			'''Make a better timestepping criteria for dust formation!'''
+			while (np.absolute(delta_nC) > n_C_free+par.CO_min):
 				print 'reducing dt for dust ',dt
 				dt = dt/2.
 				delta_dust = dYdust_dt_nucl*dt
@@ -148,11 +156,12 @@ while t < par.tmax:
 	# compute the saturation - free C over equil C
 	sat = Y_C_free/Yeq 
 	# define the rate of gaseous C depletion due to nucleation as 0 (will change it later)
-	dYDdt_nucl = 0 
+	dCdt_nucl = 0 
 	# compute the growth rate of previously formed grains [# of atoms / s]
 	dNdt_grow = ph.cshape*(size[i-1]*ph.vC)**(2./3.) * np.sqrt(ph.kB*T_cs/(2*np.pi*ph.mC)) * n_C_free 
 	# and update their sizes
 	grow_indices = np.where(size[:i-1] > 0)
+	'''What if N_grow is a fraction of an atom??'''
 	size[grow_indices] = size[grow_indices]+dNdt_grow*dt
 
 	# exception handling:
@@ -169,35 +178,38 @@ while t < par.tmax:
 			np.exp(-4*ph.cshape**3*ph.vC**2*ph.sigma**3/27./(ph.kB*T_cs)**3/(np.log(sat)**2)) 
 		dmu = ph.kB*T_cs*np.log(sat)
 		# the critical size
-		ncritical=np.maximum(8*ph.cshape**3*ph.vC**2*ph.sigma**3/27/dmu**3,2)
-		# the rate of depletion of gas C due to nucleating new grains
-		dYDdt_nucl = J*ncritical/n
-		dust[i] = J
+		ncritical=np.maximum(8*ph.cshape**3 * ph.vC**2 * ph.sigma**3 /(27 * dmu**3),2)
+		# the rate of depletion of gas C atoms due to nucleating new grains
+		dCdt_nucl = J*ncritical
+		# Number of grains formed at each step:
+		dust[i] = J*dt
 		# set the size of the newly formed grains to be either the critical size or, 
-		# if the critical size is formally less than two atoms, i set it to be =2
+		# if the critical size is formally less than two atoms, i set it to be = 2
 		size[i]=ncritical
 
-	# dust: sum the growth term over all grains
-	dYDdt_growint = np.sum(dNdt_grow*dust)/n
+	# sum all present dust grains at current step
+	alldust[i] = dust[:i].sum()
+	# sum all present solid carbon atoms at current step
+	allcarbon[i] = np.sum(dust[:i]*size[:i])
+	# here Y dust is the total number of carbon atoms locked in dust! - check if conserving mass:
+	#Y_dust = allcarbon[i]/n
+	# dust: sum the growth term over all previous grains
+	dCdt_growint = np.sum(dNdt_grow*dust[i-1])
 
-	Y_dust = np.maximum(Y_dust + (dYDdt_nucl+dYDdt_growint)*dt,0)
-	Y_dust = np.minimum(Y_dust,1.)
+	Y_dust = Y_dust + (dCdt_nucl+dCdt_growint)/n*dt
 
 	# subtract the carbon from the free C gas
-	Y_C_free = np.maximum(Y_C_free - Y_dust,0)
-
-	alldust[i] = dust[:i].sum()
-
-	# why sumn to i+1? i only know i-1
-	allcarbon[i] = np.sum(dust[:i]*size[:i])
+	n_C_free = np.maximum(n_C_free - (dCdt_nucl+dCdt_growint)*dt,0)
+	Y_C_free = n_C_free/n
 
 	# evolve the rates
 	K_ra = re.formation(T_cs)
 	K_th = re.thermal(T_cs)
 	K_rd = K_th + K_nth
-
+ 
 	# Append to text file
 	fractionfile.write("%.5f %.5f %.5f %.5f %.5f %i %i %.5e \n"%(t,Y_CO,Y_C_free,Y_O_free,Y_dust,int_flag,adap_flag,sat))
+	massfracfile.write("%.5f %.5f %.5f %.5f %.5f %.5f \n"%(t,ph.A_CO*Y_CO,ph.A_C*Y_C_free,ph.A_O*Y_O_free,ph.A_C*Y_dust,dNdt_grow))
 	ratesfile.write("%.5e %.5e %.5e \n"%(K_ra, K_th, K_nth))
 	thermofile.write("%.5f %.5f %.5f %.2f %.5f \n"%(T_cs, n, delta, R_cs, c_s))
 
@@ -232,4 +244,5 @@ np.savetxt("runs/%s/dust.txt"%par.directory, dust_array, '%.5e', delimiter='   '
 fractionfile.close()
 ratesfile.close()
 thermofile.close()
+massfracfile.close()
 
