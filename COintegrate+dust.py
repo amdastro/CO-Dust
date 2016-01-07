@@ -30,10 +30,10 @@ K_rd = K_th + K_nth
 Y_CO = ab.Y_CO_equil(par.Y_C_tot, par.Y_O_tot, n, K_ra, K_rd)
 Y_C_free = par.Y_C_tot - Y_CO
 Y_O_free = par.Y_O_tot - Y_CO
-Y_dust = 0
+Y_dust = 0.
+n_dust = Y_dust*n
 # mass fractions are just A*Y, but dust mass fraction depends on grain size
 X_dust = 0.
-dNdt_grow = 0.
 n_C_free = Y_C_free * n
 n_O_free = Y_O_free * n
 int_flag = 0 # flag = 1 when integrating
@@ -64,22 +64,22 @@ t = par.tmin
 #------------- OUTPUT FILES -----------------------#
 # First open to overwrite previous - probably a better way to do this
 fractionfile = open("runs/%s/fractions.txt"%par.directory, 'w')
-massfracfile = open("runs/%s/massfrac.txt"%par.directory, 'w')
+densfile = open("runs/%s/densities.txt"%par.directory, 'w')
 ratesfile = open("runs/%s/rates.txt"%par.directory, 'w')
 thermofile = open("runs/%s/thermo.txt"%par.directory, 'w')
 # Then open for appending
 fractionfile = open("runs/%s/fractions.txt"%par.directory, 'a')
-massfracfile = open("runs/%s/massfrac.txt"%par.directory, 'a')
+densfile = open("runs/%s/densities.txt"%par.directory, 'a')
 ratesfile = open("runs/%s/rates.txt"%par.directory, 'a')
 thermofile = open("runs/%s/thermo.txt"%par.directory, 'a')
 # headers: 
-fractionfile.write("# t     Y_CO      Y_C_free     Y_O_free      int_flag    adap_flag     sat\n")
-massfracfile.write("# t     X_CO      X_C_free     X_O_free     X_dust    dNdt_grow\n")
+fractionfile.write("# t     Y_CO      Y_C_free     Y_O_free    Y_dust    int_flag    adap_flag     sat\n")
+densfile.write("# t     n_CO      n_C_free     n_O_free     n_dust\n")
 ratesfile.write("# K_ra      K_therm     K_nontherm \n")
 thermofile.write("# T_cs     n      delta      R_cs       c_s  \n")
 # first line: 
-fractionfile.write("%.5f %.5f %.5f %.5f %.5f %i %i %.5e \n"%(t,Y_CO,Y_C_free,Y_O_free,Y_dust,int_flag,adap_flag,sat))
-massfracfile.write("%.5f %.5f %.5f %.5f %.5f %.5f \n"%(t,ph.A_CO*Y_CO,ph.A_C*Y_C_free,ph.A_O*Y_O_free,X_dust,dNdt_grow))
+fractionfile.write("%.5f %.5f %.5f %.5f %.5f %i %i %.5e \n"%(t,Y_CO,Y_C_free,Y_O_free,n_dust/n,int_flag,adap_flag,sat))
+densfile.write("%.5f %.5f %.5f %.5f %.5f \n"%(t,n*Y_CO,n_C_free,n_O_free,n_dust))
 ratesfile.write("%.5f %.5e %.5e \n"%(K_ra, K_th, K_nth))
 thermofile.write("%.5f %.5f %.5f %.2f %.5f \n"%(T_cs, n, delta, R_cs, c_s))
 
@@ -152,17 +152,15 @@ while t < par.tmax:
 	neq=6.9e13*np.exp(-84428.2/T_cs)/ph.kB/T_cs
 	if neq==0: neq=1e-280   # just set it to a very small number if it comes out as 0
 	if neq!=neq: neq=1e-280 # or if it comes out to be a NaN
-	Yeq = neq/n
 	# compute the saturation - free C over equil C
-	sat = Y_C_free/Yeq 
+	sat = n_C_free/neq 
 	# define the rate of gaseous C depletion due to nucleation as 0 (will change it later)
 	dCdt_nucl = 0 
 	# compute the growth rate of previously formed grains [# of atoms / s]
-	dNdt_grow = ph.cshape*(size[i-1]*ph.vC)**(2./3.) * np.sqrt(ph.kB*T_cs/(2*np.pi*ph.mC)) * n_C_free 
+	# depends on current size of each set of grains
+	dNdt_grow = ph.cshape*(size[:i-1]*ph.vC)**(2./3.) * np.sqrt(ph.kB*T_cs/(2*np.pi*ph.mC)) * n_C_free 
 	# and update their sizes
-	grow_indices = np.where(size[:i-1] > 0)
-	'''What if N_grow is a fraction of an atom??'''
-	size[grow_indices] = size[grow_indices]+dNdt_grow*dt
+	size[:i-1] = size[:i-1]+dNdt_grow[:i-1]*dt
 
 	# exception handling:
 	# if the array gets filled up, break
@@ -177,26 +175,28 @@ while t < par.tmax:
 		J = (ph.cshape**3 * ph.vC**2 * ph.sigma/(18*np.pi**2*ph.mC))**(1./2.) * n_C_free**2 * \
 			np.exp(-4*ph.cshape**3*ph.vC**2*ph.sigma**3/27./(ph.kB*T_cs)**3/(np.log(sat)**2)) 
 		dmu = ph.kB*T_cs*np.log(sat)
-		# the critical size
+		# the critical size [# of C atoms per grain]
 		ncritical=np.maximum(8*ph.cshape**3 * ph.vC**2 * ph.sigma**3 /(27 * dmu**3),2)
-		# the rate of depletion of gas C atoms due to nucleating new grains
+		# the rate of depletion of gas C atoms due to nucleating new grains [number density of atoms / s]
 		dCdt_nucl = J*ncritical
-		# Number of grains formed at each step:
+		# Number of grains formed at each step: 
 		dust[i] = J*dt
-		# set the size of the newly formed grains to be either the critical size or, 
-		# if the critical size is formally less than two atoms, i set it to be = 2
+		# initial size of newly formed grains [# of atoms]
 		size[i]=ncritical
 
-	# sum all present dust grains at current step
+	# number density of present dust grains at current step
 	alldust[i] = dust[:i].sum()
-	# sum all present solid carbon atoms at current step
+	# total present solid carbon atoms at current step
+	'''Dont trust this because it doesn't take into account the expansion! '''
 	allcarbon[i] = np.sum(dust[:i]*size[:i])
-	# here Y dust is the total number of carbon atoms locked in dust! - check if conserving mass:
-	#Y_dust = allcarbon[i]/n
-	# dust: sum the growth term over all previous grains
-	dCdt_growint = np.sum(dNdt_grow*dust[i-1])
+	# here Y_dust = allcarbon[i]/n is the total number of carbon atoms locked in dust! - can check if conserving mass
 
-	Y_dust = Y_dust + (dCdt_nucl+dCdt_growint)/n*dt
+	# of free C atoms that go into previous dust grain growth during this time step: 
+	dCdt_growint = np.sum(dNdt_grow[:i-1]*dust[:i-1])
+
+	# this is the SAME as allcarbon! 
+	Y_dust = np.minimum(Y_dust + (dCdt_nucl+dCdt_growint)/n*dt,par.Y_C_tot)
+	n_dust = Y_dust*n
 
 	# subtract the carbon from the free C gas
 	n_C_free = np.maximum(n_C_free - (dCdt_nucl+dCdt_growint)*dt,0)
@@ -209,20 +209,14 @@ while t < par.tmax:
  
 	# Append to text file
 	fractionfile.write("%.5f %.5f %.5f %.5f %.5f %i %i %.5e \n"%(t,Y_CO,Y_C_free,Y_O_free,Y_dust,int_flag,adap_flag,sat))
-	massfracfile.write("%.5f %.5f %.5f %.5f %.5f %.5f \n"%(t,ph.A_CO*Y_CO,ph.A_C*Y_C_free,ph.A_O*Y_O_free,ph.A_C*Y_dust,dNdt_grow))
+	densfile.write("%.5f %.5f %.5f %.5f %.5f \n"%(t,n*Y_CO,n_C_free,n_O_free,n_dust))
 	ratesfile.write("%.5e %.5e %.5e \n"%(K_ra, K_th, K_nth))
 	thermofile.write("%.5f %.5f %.5f %.2f %.5f \n"%(T_cs, n, delta, R_cs, c_s))
 
 	# Expand the shell
 	R_cs = par.R_cs_init + par.v_ej*t
 	delta = par.delta_init + c_s*t
-
-	if t < (R_cs**2 * delta/par.v_ej**3)**(1./3.): 
-		n = par.M_cs/(4.*np.pi*ph.mp*R_cs**2 * delta)
-		t_exp = t/2.
-	else:
-		n = par.M_cs/(4.*np.pi*ph.mp*(par.v_ej*t)**3)
-		t_exp = t/3.
+	n = par.M_cs/(4.*np.pi*ph.mp*R_cs**2 * delta)
 
 	# Temperature and sound speed decrease
 	T_cs = par.T_cs_init * (n / par.n_init)**(par.gamma-1.)
@@ -244,5 +238,5 @@ np.savetxt("runs/%s/dust.txt"%par.directory, dust_array, '%.5e', delimiter='   '
 fractionfile.close()
 ratesfile.close()
 thermofile.close()
-massfracfile.close()
+densfile.close()
 
