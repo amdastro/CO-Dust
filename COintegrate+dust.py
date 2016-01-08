@@ -28,12 +28,16 @@ K_rd = K_th + K_nth
 
 #------------ Initial abundances ------------
 Y_CO = ab.Y_CO_equil(par.Y_C_tot, par.Y_O_tot, n, K_ra, K_rd)
-Y_C_free = par.Y_C_tot - Y_CO
-Y_O_free = par.Y_O_tot - Y_CO
+X_CO = ph.A_CO*Y_CO
+X_C_free = par.X_C_tot - X_CO
+X_O_free = par.X_O_tot - X_CO
+Y_C_free = X_C_free/ph.A_C
+Y_O_free = X_O_free/ph.A_O
+# Y_dust refers to the number fraction of carbon molecules in solid form
 Y_dust = 0.
 n_dust = Y_dust*n
 # mass fractions are just A*Y, but dust mass fraction depends on grain size
-X_dust = 0.
+X_dust = ph.A_C*Y_dust
 n_C_free = Y_C_free * n
 n_O_free = Y_O_free * n
 int_flag = 0 # flag = 1 when integrating
@@ -43,20 +47,15 @@ adap_flag = 0 # flag = 1 when dt is smaller than default
 arraylen = 200000
 # size of grains:
 # initialize a large array, and make a bigger one later if you need to
-#size = np.zeros([2*(par.tmax-par.tmin)/par.dt_init])
 size = np.zeros([arraylen])
 # similarly, save the number of grains at each time: 
-#dust = np.zeros([2*(par.tmax-par.tmin)/par.dt_init])
 dust = np.zeros([arraylen])
 # number of grains at all times:
-#alldust = np.zeros([2*(par.tmax-par.tmin)/par.dt_init])
 alldust = np.zeros([arraylen])
 # saturation:
 sat = 0.
-# all carbon in solid form: ? 
-#allcarbon = np.zeros([2*(par.tmax-par.tmin)/par.dt_init])
+# all carbon in solid form: 
 allcarbon = np.zeros([arraylen])
-# initial growth rate, just becuase the size array is a different shape
 
 # Initial time
 t = par.tmin
@@ -73,12 +72,12 @@ densfile = open("runs/%s/densities.txt"%par.directory, 'a')
 ratesfile = open("runs/%s/rates.txt"%par.directory, 'a')
 thermofile = open("runs/%s/thermo.txt"%par.directory, 'a')
 # headers: 
-fractionfile.write("# t     Y_CO      Y_C_free     Y_O_free    Y_dust    int_flag    adap_flag     sat\n")
+fractionfile.write("# t     X_CO      X_C_free     X_O_free    X_dust    int_flag    adap_flag     sat\n")
 densfile.write("# t     n_CO      n_C_free     n_O_free     n_dust\n")
 ratesfile.write("# K_ra      K_therm     K_nontherm \n")
 thermofile.write("# T_cs     n      delta      R_cs       c_s  \n")
 # first line: 
-fractionfile.write("%.5f %.5f %.5f %.5f %.5f %i %i %.5e \n"%(t,Y_CO,Y_C_free,Y_O_free,n_dust/n,int_flag,adap_flag,sat))
+fractionfile.write("%.5f %.5f %.5f %.5f %.5f %i %i %.5e \n"%(t,X_CO,X_C_free,X_O_free,X_dust,int_flag,adap_flag,sat))
 densfile.write("%.5f %.5f %.5f %.5f %.5f \n"%(t,n*Y_CO,n_C_free,n_O_free,n_dust))
 ratesfile.write("%.5f %.5e %.5e \n"%(K_ra, K_th, K_nth))
 thermofile.write("%.5f %.5f %.5f %.2f %.5f \n"%(T_cs, n, delta, R_cs, c_s))
@@ -94,6 +93,9 @@ while t < par.tmax:
 		int_flag = 1
 		adap_flag = 0
 		delta_YCO = ab.dYCO_dt(Y_CO, Y_C_free, Y_O_free, n, K_ra, K_rd) * dt
+		''' 
+		Should I change dt criteria for delta X_CO ???? 
+		'''
 		# Reduce dt if delta_YCO is too large
 		while ((np.absolute(delta_YCO) > Y_C_free + par.CO_min) \
 			or np.absolute(delta_YCO) > Y_O_free + par.CO_min):
@@ -127,23 +129,39 @@ while t < par.tmax:
 
 		# Evolve Y_CO
 		delta_YCO = ab.dYCO_dt(Y_CO, Y_C_free, Y_O_free, n, K_ra, K_rd) * dt
-		Y_CO = np.maximum(delta_YCO + Y_CO,1e-30)
-		# First subtract the Y_CO from Y_C_free 
-		Y_C_free = np.maximum(Y_C_free - delta_YCO,1e-30)
-		Y_O_free = np.maximum(Y_O_free - delta_YCO,1e-30)
+		Y_CO = np.maximum(delta_YCO + Y_CO,1e-100)
+		delta_XCO = ph.A_CO*delta_YCO
+		#X_CO = ph.A_CO*Y_CO
+		# First subtract the number of atoms that went from free C and O to CO
+		Y_C_free = np.maximum(Y_C_free - delta_YCO,1e-100)
+		Y_O_free = np.maximum(Y_O_free - delta_YCO,1e-100)
 		'''is this ok??? :'''
 		Y_C_free = np.minimum(Y_C_free,par.Y_C_tot)
 		Y_O_free = np.minimum(Y_O_free,par.Y_O_tot)
+		# Subtract the mass fraction of new CO from C and O
+		#X_C_free = np.maximum(X_C_free - delta_XCO, 1e-100)
+		#X_O_free = np.maximum(X_O_free - delta_XCO, 1e-100)
+		#X_C_free = ph.A_C*Y_C_free
+		#X_O_free = ph.A_O*Y_O_free
+		#X_C_free = np.minimum(X_C_free,par.X_C_tot)
+		#X_O_free = np.minimum(X_O_free,par.X_O_tot)
 	else:
 		# If not integrating, solve for the equilibrium density 
 		int_flag = 0
 		Y_CO = ab.Y_CO_equil(par.Y_C_tot, par.Y_O_tot, n, K_ra, K_rd)
-		Y_C_free = np.maximum(par.Y_C_tot - Y_CO,1e-30)
-		Y_O_free = np.maximum(par.Y_O_tot - Y_CO,1e-30)
+		#X_CO = ph.A_CO*Y_CO
+		Y_C_free = np.maximum(par.Y_C_tot - Y_CO,1e-100)
+		Y_O_free = np.maximum(par.Y_O_tot - Y_CO,1e-100)
+		#X_C_free = ph.A_C*Y_C_free
+		#X_O_free = ph.A_O*Y_O_free
 	#----------------------------------------------------#
 	t = t + dt
 
-	# update fractions and densities after CO evolution
+	# update densities after CO evolution
+	X_C_free = ph.A_C*Y_C_free
+	X_O_free = ph.A_O*Y_O_free
+	X_CO = ph.A_CO*Y_CO
+
 	n_CO = Y_CO * n
 	n_C_free = Y_C_free * n
 	n_O_free = Y_O_free * n
@@ -187,20 +205,23 @@ while t < par.tmax:
 	# number density of present dust grains at current step
 	alldust[i] = dust[:i].sum()
 	# total present solid carbon atoms at current step
-	'''Dont trust this because it doesn't take into account the expansion! '''
+	''' Not a true number density because it doesn't take into account the expansion! '''
 	allcarbon[i] = np.sum(dust[:i]*size[:i])
-	# here Y_dust = allcarbon[i]/n is the total number of carbon atoms locked in dust! - can check if conserving mass
 
-	# of free C atoms that go into previous dust grain growth during this time step: 
+	# free C atoms that go into previous dust grain growth during this time step: 
 	dCdt_growint = np.sum(dNdt_grow[:i-1]*dust[:i-1])
 
-	# this is the SAME as allcarbon! 
+	# Subtract from the free carbon mass fraction
+	# Y_dust is the number fraction of carbon atoms that are in solid form
 	Y_dust = np.minimum(Y_dust + (dCdt_nucl+dCdt_growint)/n*dt,par.Y_C_tot)
+	# Carbon dust, so 12 nucleons per atom:
+	X_dust = ph.A_C*Y_dust
 	n_dust = Y_dust*n
 
 	# subtract the carbon from the free C gas
 	n_C_free = np.maximum(n_C_free - (dCdt_nucl+dCdt_growint)*dt,0)
 	Y_C_free = n_C_free/n
+	X_C_free = ph.A_C*Y_C_free
 
 	# evolve the rates
 	K_ra = re.formation(T_cs)
@@ -208,7 +229,7 @@ while t < par.tmax:
 	K_rd = K_th + K_nth
  
 	# Append to text file
-	fractionfile.write("%.5f %.5f %.5f %.5f %.5f %i %i %.5e \n"%(t,Y_CO,Y_C_free,Y_O_free,Y_dust,int_flag,adap_flag,sat))
+	fractionfile.write("%.5f %.5f %.5f %.5f %.5f %i %i %.5e \n"%(t,X_CO,X_C_free,X_O_free,X_dust,int_flag,adap_flag,sat))
 	densfile.write("%.5f %.5f %.5f %.5f %.5f \n"%(t,n*Y_CO,n_C_free,n_O_free,n_dust))
 	ratesfile.write("%.5e %.5e %.5e \n"%(K_ra, K_th, K_nth))
 	thermofile.write("%.5f %.5f %.5f %.2f %.5f \n"%(T_cs, n, delta, R_cs, c_s))
@@ -222,8 +243,8 @@ while t < par.tmax:
 	T_cs = par.T_cs_init * (n / par.n_init)**(par.gamma-1.)
 	c_s = np.sqrt(ph.kB*T_cs/(ph.mp))
 
-	#if Y_C_free[i] + Y_O_free[i] + 2.*Y_CO[i] != 1.: 
-	#	print 'ERROR: Sum of number fractions is ne 1!'
+	#if X_C_free + X_O_free + X_CO +X_dust != 1.: 
+	#	print 'ERROR: Sum of mass fractions is ne 1!'
 	#	break
 	#print t
 	i = i+1

@@ -6,8 +6,8 @@ import numpy as np
 
 # Set the default timestep, and the total simulation time
 dt_init = 1e2
-tmin = 9e4
-tmax = 1e7
+tmin = 1e4
+tmax = 1e8
 #integrate after this time (later set it to integrate at given some physical conditions)
 t_integrate = 1.e5
 
@@ -21,7 +21,7 @@ directory = 'tint_%.0e_dt_%.0e_min%.0e_percent%.0e'%(t_integrate,dt_init,percent
 
 ''' The initial thermodynamics of the cold shell '''
 # The total mass of the cold shell - given by the gamma ray luminosity:
-M_cs = 2e-4*ph.Msun 
+M_cs = 1e-4*ph.Msun 
 # The ejecta velocity: 
 v_ej = 1e8 
 # The initial temperature, assuming it has already cooled efficiently
@@ -29,7 +29,7 @@ T_cs_init = 1e4
 # The initial radius of shell
 R_cs_init = 1e14
 # Initial thickness:
-delta_init = R_cs_init/4000.
+delta_init = R_cs_init/1000.
 # consequent initial density:
 n_init = M_cs/(4.*np.pi * ph.mp * R_cs_init**2 * delta_init)
 
@@ -37,9 +37,14 @@ n_init = M_cs/(4.*np.pi * ph.mp * R_cs_init**2 * delta_init)
 gamma = 1.3
 
 
-# The total number fraction of C and O atoms:
-Y_C_tot = 0.4
-Y_O_tot = 0.6
+# The total mass fraction adds to 1
+# X_i = A_i * Y_i
+# Evolve things in terms of number fraction (Y is number of molecules)
+# but view them in mass fraction
+X_C_tot = 0.4
+X_O_tot = 0.6 
+Y_C_tot = X_C_tot / ph.A_C
+Y_O_tot = X_O_tot / ph.A_O
 
 
 # Gamma rays:
