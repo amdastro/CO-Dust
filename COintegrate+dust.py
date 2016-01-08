@@ -132,19 +132,12 @@ while t < par.tmax:
 		Y_CO = np.maximum(delta_YCO + Y_CO,1e-100)
 		delta_XCO = ph.A_CO*delta_YCO
 		#X_CO = ph.A_CO*Y_CO
-		# First subtract the number of atoms that went from free C and O to CO
+		# Subtract the number of atoms that went from free C and O to CO
 		Y_C_free = np.maximum(Y_C_free - delta_YCO,1e-100)
 		Y_O_free = np.maximum(Y_O_free - delta_YCO,1e-100)
 		'''is this ok??? :'''
 		Y_C_free = np.minimum(Y_C_free,par.Y_C_tot)
 		Y_O_free = np.minimum(Y_O_free,par.Y_O_tot)
-		# Subtract the mass fraction of new CO from C and O
-		#X_C_free = np.maximum(X_C_free - delta_XCO, 1e-100)
-		#X_O_free = np.maximum(X_O_free - delta_XCO, 1e-100)
-		#X_C_free = ph.A_C*Y_C_free
-		#X_O_free = ph.A_O*Y_O_free
-		#X_C_free = np.minimum(X_C_free,par.X_C_tot)
-		#X_O_free = np.minimum(X_O_free,par.X_O_tot)
 	else:
 		# If not integrating, solve for the equilibrium density 
 		int_flag = 0
@@ -152,8 +145,7 @@ while t < par.tmax:
 		#X_CO = ph.A_CO*Y_CO
 		Y_C_free = np.maximum(par.Y_C_tot - Y_CO,1e-100)
 		Y_O_free = np.maximum(par.Y_O_tot - Y_CO,1e-100)
-		#X_C_free = ph.A_C*Y_C_free
-		#X_O_free = ph.A_O*Y_O_free
+
 	#----------------------------------------------------#
 	t = t + dt
 
