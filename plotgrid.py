@@ -1,99 +1,84 @@
 import pylab as plt
 import numpy as np
 import parameters as par
-
+from matplotlib import rc
+rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+rc('text', usetex=True)
 print 'dir = ', par.directory
 
 plt.rcParams['font.size'] = 14
 plt.rcParams['legend.fontsize'] = 14
 plt.rcParams['lines.linewidth'] = 2
 
-# why is the last line incomplete???
-T_cs, n, delta, R_cs, c_s = np.genfromtxt("runs/%s/thermo.txt"%par.directory, unpack=True,skip_footer=1)
-t, Y_CO, Y_C_free, Y_O_free, Y_dust, int_flag, adap_flag, sat = np.genfromtxt("runs/%s/fractions.txt"%par.directory, unpack=True,skip_footer=1)
-K_ra, K_th, K_nth  = np.genfromtxt("runs/%s/rates.txt"%par.directory, unpack=True, skip_footer=1)
-dust, alldust, size, allcarbon  = np.loadtxt("runs/%s/dust.txt"%par.directory, unpack=True)
+T_cs, n, R_cs = np.genfromtxt("runs/%s/thermo.txt"%par.directory, unpack=True,skip_footer=1)
+t, X_CO, X_C_free, X_O_free, X_D,X_D_sml,X_D_lrg, int_flag, adap_flag, sat = np.genfromtxt("runs/%s/fractions.txt"%par.directory, unpack=True,skip_footer=1)
+t, n_CO, n_C_free, n_O_free, n_D, Ncrit = np.genfromtxt("runs/%s/densities.txt"%par.directory, unpack=True, skip_footer=1)
+K_ra, K_th, K_nth, J  = np.genfromtxt("runs/%s/rates.txt"%par.directory, unpack=True, skip_footer=1)
+dust, alldust, size  = np.loadtxt("runs/%s/dust.txt"%par.directory, unpack=True)
 
 dust = np.array(dust[:len(t)])
 alldust = np.array(alldust[:len(t)])
 size = np.array(size[:len(t)])
-allcarbon = np.array(allcarbon[:len(t)])
 
-K_rd = K_th + K_nth
 
-plt.figure(figsize=(12,5))
-plt.subplot(121)
-plt.plot(t,Y_C_free,label=r'$Y_{\rm C}^{\rm free}$',color='#013ADF')
-plt.plot(t,Y_O_free,label=r'$Y_{\rm O}^{\rm free}$',color='#04B45F')
-plt.plot(t[np.where(int_flag > 0)], Y_CO[np.where(int_flag > 0)], linewidth=15, alpha=0.1, color='red')
-plt.plot(t[np.where(adap_flag > 0)], Y_CO[np.where(adap_flag > 0)], linewidth=15, alpha=0.1, color='blue')
-plt.plot(t,Y_CO,label=r'$Y_{\rm CO}$',color='red')
-plt.plot(t,Y_dust,label=r'$Y_{\rm dust}$',color='purple')
+#--------- Bin the sizes: -------------
+bincount = 500
+logsize = np.log10(size)
+logsize[np.where(logsize < 0)] = 0.
+
+sizebins = np.logspace(0.,np.max(logsize),bincount)
+# logarithmically spaced - range is 0,max(size) not log)    
+sizehist = np.zeros(bincount)
+
+for i in range(1,len(sizebins)-1):
+    binthis = np.where((size < sizebins[i+1]) & (size > sizebins[i-1]))
+    sizehist[i] = np.sum(dust[binthis])
+
+#---------------------------------------
+
+
+plt.figure(figsize=(12,8))
+plt.subplot(221)
+
+plt.plot(t,X_C_free,label=r'$X_{\rm C}^{\rm free}$',color='#013ADF')
+plt.plot(t,X_O_free,label=r'$X_{\rm O}^{\rm free}$',color='#04B45F')
+#plt.plot(t[np.where(int_flag > 0)], Y_CO[np.where(int_flag > 0)], linewidth=15, alpha=0.1, color='red')
+#plt.plot(t[np.where(adap_flag > 0)], Y_CO[np.where(adap_flag > 0)], linewidth=15, alpha=0.1, color='blue')
+plt.plot(t,X_CO,label=r'$X_{\rm CO}$',color='red')
+plt.plot(t,X_D,label=r'$X_{\rm C}^{\rm solid}$',color='purple')
 plt.xlabel('$t$')
-plt.ylabel(r'${\rm number \, fraction}$')
+plt.title(r'${\rm mass \, fraction}$')
+plt.ylabel('$X$')
 plt.xscale('log')
-plt.ylim([-0.1,1.1])
+plt.ylim([-0.1,1])
 plt.xlim([par.tmin,par.tmax])
 plt.legend(loc=2)
 
-jj = np.where(sat > 1)
-plt.subplot(122)
-plt.semilogy(t[jj], Y_C_free[jj]*n[jj],label=r'$n_C$')
-plt.semilogy(t[jj], sat[jj],label='$S$')
-plt.semilogy(t[jj], allcarbon[jj],label=r'$ \rm solid C$')
+plt.subplot(222)
+#plt.plot([par.tmin,par.tmax],[1.,1.],'--',color='grey',label=r'$S=1$')
+plt.semilogy(t, sat)
 plt.xlabel('$t$')
-#plt.yscale('log')
+plt.ylabel('$S$')
 plt.xscale('log')
-plt.ylim([1e-10,1e10])
 plt.legend()
+#plt.ylim([1e-10,1e10])
+
+plt.subplot(223)
+plt.plot(t, n)
+plt.xlabel('$t$')
+plt.xscale('log')
+plt.yscale('log')
 
 
-
-
-
-
-# destruction timescale
-#t_dest = 1./(K_rd)
-# formation timescale
-#t_form = 1./(K_ra*n)
-
-#--------------------- PLOT ---------------------#
-
-#plt.plot(t, 1./(K_rd)/t_exp)
-#plt.xscale('log')
-#plt.yscale('log')
-#plt.xlabel('$t$')
-#plt.ylabel(r'$t_{\rm eq} /t_{\rm exp}$')
-#plt.savefig('t_eq.png')
-
-
-
-#plt.subplot(221)
-#plt.plot(t, n,color='black')
-#plt.xscale('log')
-#plt.yscale('log')
-#plt.xlabel('$t$')
-#plt.ylabel(r'$n_{\rm tot}$')
-
-#plt.subplot(222)
-#plt.plot(t, T_cs,color='black')
-#plt.xscale('log')
-#plt.yscale('log')
-#plt.xlabel('$t$')
-#plt.ylabel(r'$T_{\rm cs}$')
-
-
-
-#plt.plot(t,K_th,label=r'$K_{\rm therm}$',linestyle='--',color='orange')
-#plt.plot(t,K_nth,label=r'$K_{\rm nontherm}$',linestyle='--',color='magenta')
-#plt.plot(t,(K_rd), label=r'$K_{\rm rd}$',color='red')
-#plt.plot(t,(K_ra*n), label=r'$K_{\rm ra} n$',color='blue')
-#plt.xlabel('$t$')
-#plt.ylabel(r'$K \rm [s^{-1}]$')
-#plt.yscale('log')
-#plt.xscale('log')
-#plt.legend(loc=3)
-#plt.ylim([1e-80,1e10])
+plt.subplot(224)
+plt.plot(sizebins,sizehist,linestyle='none',marker='o')
+plt.xlabel(r'$\log(N_{\rm atoms})$')
+plt.ylabel(r'$\#$')
+plt.title(r'$\rm size \, distribution$')
+plt.xscale('log')
+plt.yscale('log')
+#plt.ylim([1e-1,1e8])
+#plt.xlim([1e0,1e8])
 
 
 
