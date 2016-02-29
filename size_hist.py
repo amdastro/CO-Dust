@@ -3,10 +3,12 @@ import parameters as par
 import pylab as plt
 import os
 import re
-plt.rcParams['font.size'] = 14
-plt.rcParams['legend.fontsize'] = 14
-plt.rcParams['lines.linewidth'] = 3
-
+plt.rcParams['font.size'] = 16
+plt.rcParams['legend.fontsize'] = 16
+plt.rcParams['lines.linewidth'] = 1
+from matplotlib import rc
+rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+rc('text', usetex=True)
 
 print 'reading ', par.directory
 
@@ -58,13 +60,13 @@ for i in size:
     		growhist[i][j] = np.sum(dust[i][bin_growth])
 
 #plt.figure(figsize=(8,10))
-'''
-plt.subplot(211)
+
+#plt.subplot(211)
 plt.plot(sizebins[0],sizehist[0]*sizebins[0],color='blue',alpha=0.5,label=r'$t= 3 \times 10^6$')
 plt.plot(sizebins[1],sizehist[1]*sizebins[1],color='green',alpha=0.5,label=r'$t= 6 \times 10^6$')
 plt.plot(sizebins[2],sizehist[2]*sizebins[2],color='orange',alpha=0.5,label=r'$t= 9 \times 10^6$')
 plt.plot(sizebins[3],sizehist[3]*sizebins[3],color='red',alpha=0.5,label=r'$t= 1.2 \times 10^7$')
-plt.plot(sizebins[32],sizehist[32]*sizebins[32],color='black',alpha=0.5,label=r'$t= 1 \times 10^8$')
+plt.plot(sizebins[19],sizehist[19]*sizebins[19],color='black',alpha=0.5,label=r'$t= 1 \times 10^8$')
 plt.yscale('log')
 plt.xscale('log')
 plt.ylim([1e-4,1e10])
@@ -72,19 +74,25 @@ plt.xlabel(r'$N_{\rm atoms}$')
 plt.title(r'$\rm mass \, distribution$')
 plt.xlim([1e0,1e12])
 plt.legend()
-'''
 
+'''
 #plt.subplot(212)
-plt.plot(growbins[0],growhist[0],color='blue',alpha=0.5,label=r'$t= 3 \times 10^6$')
-plt.plot(growbins[1],growhist[1],color='green',alpha=0.5,label=r'$t= 6 \times 10^6$')
-plt.plot(growbins[2],growhist[2],color='orange',alpha=0.5,label=r'$t= 9 \times 10^6$')
-plt.plot(growbins[3],growhist[3],color='red',alpha=0.5,label=r'$t= 1.2 \times 10^7$')
-plt.plot(growbins[32],growhist[32],color='black',alpha=0.5,label=r'$t= 1 \times 10^8$')
-plt.xscale('log')
+plt.plot(growbins[0],growhist[0],linestyle='none',marker='o',color='blue',label=r'$t= 3 \times 10^6$')
+#plt.plot(growbins[0],growhist[0],linestyle='none',marker='o',color='black')
+plt.plot(growbins[1],growhist[1],linestyle='none',marker='o',color='green',label=r'$t= 6 \times 10^6$')
+#plt.plot(growbins[1],growhist[1],linestyle='none',marker='o',color='black')
+plt.plot(growbins[2],growhist[2],linestyle='none',marker='o',color='orange',label=r'$t= 9 \times 10^6$')
+#plt.plot(growbins[2],growhist[2],linestyle='none',marker='o',color='black')
+plt.plot(growbins[3],growhist[3],linestyle='none',marker='o',color='red',label=r'$t= 1.2 \times 10^7$')
+#plt.plot(growbins[3],growhist[3],linestyle='none',marker='o',color='black')
+plt.plot(growbins[32],growhist[32],linestyle='none',marker='o',
+	color='black',alpha=0.5,label=r'$t= 1 \times 10^8$')
+#plt.plot(growbins[32],growhist[32],linestyle='none',marker='o',color='black')
 plt.title(r'$\rm growth \, rate \, hist$')
+plt.xlim([0.001,1e2])
 plt.xlabel(r'$N_{\rm atoms} / dt$')
 plt.legend()
-plt.tight_layout()
-
+#plt.tight_layout()
+'''
 
 plt.show()

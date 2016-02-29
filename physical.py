@@ -20,3 +20,6 @@ vC = mC/rhoC  # Volume occupied by a carbon atom in the bulk of the solid phase
 A_C = 12.
 A_O = 15.999
 A_CO =A_C+A_O # just about?
+
+# conversion parameters
+daytosec = 86400.
