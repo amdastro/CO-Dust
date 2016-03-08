@@ -16,7 +16,6 @@ sigma = 1500. # Surface energy of solid carbon
 vC = mC/rhoC  # Volume occupied by a carbon atom in the bulk of the solid phase
 
 # atomic numbers for mass fraction: 
-'''****make sure these are right****'''
 A_C = 12.
 A_O = 15.999
 A_CO =A_C+A_O # just about?

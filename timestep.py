@@ -26,11 +26,11 @@ def choosedt(dt,n,neq,T_cs,Y_CO,Y_C_free,Y_O_free,K_ra,K_rd,n_C_free,size,dust_Y
 
 	# Maybe this will be too stringent, but let's try
 	# if the sum (not absolute value?) of all changes in Y_C_free is greater than 
-	# say, 50% of Y_C_free (+ a minimum value) or Y_O_free, for future abundances
+	# say, 30% of Y_C_free (+ a minimum value) or Y_O_free, for future abundances
 	# then reduce dt:
 	delta_YC_tot = delta_YC_CO + delta_YC_nucl + delta_YC_grow
-	while ((np.absolute(delta_YC_tot) > 0.5*Y_C_free + par.Y_min) \
-		or np.absolute(delta_YC_tot) > 0.5*Y_O_free + par.Y_min):
+	while ((np.absolute(delta_YC_tot) > par.percent*Y_C_free + par.Y_min) \
+		or np.absolute(delta_YC_tot) > par.percent*Y_O_free + par.Y_min):
 		print 'timestep reduced ', Y_C_free, delta_YC_CO, delta_YC_nucl, delta_YC_grow
 		adap_flag = 1
 		dt = dt/2.
