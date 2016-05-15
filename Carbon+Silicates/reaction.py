@@ -12,7 +12,7 @@ def COthermal(T):
 	'''Destructiom rate by thermal processes'''
 	K = 4.467e-17/((T/4467.)**(-2.08) + (T/4467.)**(-0.22))**0.5\
 		*(ph.h**2 / (2.*np.pi*ph.muCO*ph.kB*T))**(-1.5) * np.exp(-ph.B_CO/(ph.kB*T))
-	return K
+	return np.maximum(K,1e-200)
 
 def SiOformation(T):
 	'''Formation rate from Todini & Ferrara 2001
@@ -27,11 +27,8 @@ def SiOthermal(T):
 	K = 4.4e-10*np.exp(-98600./T)
 	return np.minimum(K,1e300)
 
-#Should I include this?
-def SiONdest(T):
-	'''SiO + N -> SiN + O
-	Rate from Cherchneff & Dwek 2009'''
-	K = 3.84e-9*np.exp(-35959./T)
+def CO_H_dest(T):
+	K = 1.1e-10*(T/300.)**0.5*np.exp(-77700./T)
 	return np.minimum(K,1e300)
 
 

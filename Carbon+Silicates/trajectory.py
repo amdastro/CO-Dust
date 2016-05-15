@@ -13,11 +13,11 @@ def shellexp(t,R_cs,delta,n,T_cs,c_s):
 	return R_cs,delta,n,T_cs,c_s
 
 
-def pontefract(t,dt,R_cs,n,T_cs):
-	R_cs = R_cs + par.v_ej*dt
-	n = par.n_init * (R_cs/par.R_cs_init)**-3
-	T_cs = par.T_cs_init * (R_cs/par.R_cs_init)**-2
-	return R_cs,n,T_cs
+def pontefract(t,dt,R,R0,v_ej,n,n0,T,T0):
+	R = R + v_ej*dt
+	n = n0 * (R/R0)**-3
+	T = T0 * (R/R0)**-0.5
+	return R,n,T
 
 
 #def shocklum(t):

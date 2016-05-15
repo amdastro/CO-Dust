@@ -18,13 +18,6 @@ rhoC = 2.23 	# Density of solid carbon
 sigmaC = 1500. # Surface energy of solid carbon
 vC = mC/rhoC  # Volume occupied by a carbon atom in the bulk of the solid phase
 
-# silicate dust:
-'''UPDATE THESE!!'''
-mMg2SiO4 = 12*1.67e-24 	# mass of Mg2SiO4 molecule
-rhoMg2SiO4 = 2.23 	# Density of solid carbon
-sigmaMg2SiO4 = 1500. # Surface energy of solid carbon
-vMg2SiO4 = mMg2SiO4/rhoMg2SiO4  # Volume occupied by a carbon atom in the bulk of the solid phase
-
 # atomic numbers for mass fraction: 
 A_H  = 1.01
 A_He = 4.0
@@ -40,8 +33,17 @@ A_Ar = 39.95
 A_Ca = 40.08
 A_Fe = 55.85
 A_CO = A_C + A_O 
+A_OH = A_H + A_O
 A_SiO = A_Si + A_O
 A_Mg2SiO4 = 2.*A_Mg + A_SiO + 3.*A_O
+
+
+# silicate dust:
+mMg2SiO4 = A_Mg2SiO4*1.67e-24 	# mass of Mg2SiO4 molecule
+sigmaMg2SiO4 = 436. # Surface energy of Mg2SiO4
+vMg2SiO4 = 3.635e-23  # Volume occupied by a condensate, from Nozawa 2003 radius a0 = 2.055 Angstroms, assuming spherical grains
+rhoMg2SiO4 = mMg2SiO4/vMg2SiO4 	# Density of solid Mg2SiO4
+
 
 # conversion parameters
 daytosec = 86400.
