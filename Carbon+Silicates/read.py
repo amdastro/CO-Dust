@@ -5,13 +5,31 @@ rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 print 'reading ', par.directory
 
-T_cs, n, delta, R_cs, c_s = np.genfromtxt("runs/%s/thermo.txt"%par.directory, unpack=True,skip_footer=1)
-t, X_CO, X_C_free, X_O_free, X_D,X_D_sml,X_D_lrg, int_flag, adap_flag, sat = np.genfromtxt("runs/%s/fractions.txt"%par.directory, unpack=True,skip_footer=1)
-t, n_CO, n_C_free, n_O_free, n_D, Ncrit = np.genfromtxt("runs/%s/densities.txt"%par.directory, unpack=True, skip_footer=1)
-K_ra, K_th, K_nth, J  = np.genfromtxt("runs/%s/rates.txt"%par.directory, unpack=True, skip_footer=1)
-dust, alldust, size, allcarbon  = np.loadtxt("runs/%s/dust.txt"%par.directory, unpack=True)
+T_cs, n = np.genfromtxt("runs/%s/thermo.txt"%par.directory, unpack=True,skip_footer=1)
 
-dust = np.array(dust[:len(t)])
-alldust = np.array(alldust[:len(t)])
-size = np.array(size[:len(t)])
-allcarbon = np.array(allcarbon[:len(t)])
+t, dt, X_CO, X_C, X_O, X_solidC, \
+X_Mg,X_Si,X_SiO,X_Mg2SiO4,X_H,\
+adap_flag, satC, satSi \
+= np.genfromtxt("runs/%s/fractions.txt"%par.directory, unpack=True,skip_footer=1)
+
+t, n_CO, n_C_free, n_O_free, n_solidC,\
+n_Mg,n_Si,n_SiO,n_Mg2SiO4,n_H,ncrit_Cg,ncrit_Sig\
+ = np.genfromtxt("runs/%s/densities.txt"%par.directory, unpack=True, skip_footer=1)
+
+K_CO_ra, K_CO_th, K_CO_nth, \
+K_SiO_ra, K_SiO_th, K_SiO_nth,K_CO_H,J_Cg,J_Sig  \
+= np.genfromtxt("runs/%s/rates.txt"%par.directory, unpack=True, skip_footer=1)
+
+Y_grains_Cg, Y_grains_Cg_tot, sizes_Cg  \
+= np.loadtxt("runs/%s/Cdust.txt"%par.directory, unpack=True)
+Y_grains_Sig, Y_grains_Sig_tot, sizes_Sig  \
+= np.loadtxt("runs/%s/Sidust.txt"%par.directory, unpack=True)
+
+
+Y_grains_Cg = np.array(Y_grains_Cg[:len(t)])
+Y_grains_Cg_tot = np.array(Y_grains_Cg_tot[:len(t)])
+sizes_Cg = np.array(sizes_Cg[:len(t)])
+
+Y_grains_Sig = np.array(Y_grains_Sig[:len(t)])
+Y_grains_Sig_tot = np.array(Y_grains_Sig_tot[:len(t)])
+sizes_Sig = np.array(sizes_Sig[:len(t)])

@@ -135,12 +135,9 @@ densfile = open("runs/%s/densities.txt"%par.directory, 'a')
 ratesfile = open("runs/%s/rates.txt"%par.directory, 'a')
 thermofile = open("runs/%s/thermo.txt"%par.directory, 'a')
 # headers: 
-fractionfile.write("# t     dt     X_CO      X_C     X_O    X_solidC   \
-	X_Mg      X_Si     X_SiO       X_Mg2SiO4    X_H    adap_flag     sat_Cg    lnsat_Sig\n")
-densfile.write("# t     n_CO      n_C      n_O       n_solidC    n_Mg      \
-	n_Si      n_SiO    n_Mg2SiO4  n_H    ncritical_Cg     ncritical_Sig\n")
-ratesfile.write("# K_CO_ra      K_CO_therm     K_CO_nontherm   K_SiO_ra     \
-	K_SiO_therm      K_SiO_nontherm     K_CO_H     J_Cg     J_Sg\n")
+fractionfile.write("# t     dt     X_CO      X_C     X_O    X_solidC 	X_Mg    X_Si     X_SiO       X_Mg2SiO4    X_H    adap_flag     sat_Cg    lnsat_Sig\n")
+densfile.write("# t     n_CO      n_C      n_O       n_solidC    n_Mg     n_Si      n_SiO    n_Mg2SiO4  n_H    ncritical_Cg     ncritical_Sig\n")
+ratesfile.write("# K_CO_ra      K_CO_therm     K_CO_nontherm   K_SiO_ra   K_SiO_therm      K_SiO_nontherm     K_CO_H     J_Cg     J_Sg\n")
 thermofile.write("# T_cs     n\n")
 
 # first line: 
@@ -291,7 +288,7 @@ while t < par.tmax - par.dt_init:
 		delta_YCO_tot = (dYCOdt) * dt
 		#delta_YH_tot  = (dYHdt) * dt
 		#delta_YOH_tot = (dYOHdt) * dt
-		print 'dt reduced at t=',t
+		#print 'dt reduced at t=',t
 	
 	# --------------------------------------------------------
 	# Update grain sizes
@@ -304,13 +301,15 @@ while t < par.tmax - par.dt_init:
 	Y_grains_Cg_tot[i] = Y_grains_Cg.sum()
 	Y_grains_Sig_tot[i] = Y_grains_Sig.sum()
 
+	days = t/86400
 
-	if sat_Cg > 1 and lnsat_Sig > 0 and float(i) % 100000 == 0:
+	'''
+	if sat_Cg > 1 and lnsat_Sig > 0 and days % 20 > 19.99:
 		massarray = np.array([Y_grains_Cg, Y_grains_Sig, sizes_Cg, sizes_Sig, dNdt_grow_Cg, dNdt_grow_Sig]).T
-		print 'saving mass at t = ',t
+		print 'saving mass at t = ',days, ' days'
 		np.savetxt("runs/%s/massfile_t_%.0f.txt"%(par.directory,t), massarray, '%.5e', delimiter='   ',\
 			header="# Y_Cg_step     Y_Sig_step     sizes_Cg   sizes_Sig      growth rate Cg     growth rate Sig")  
-
+	'''
 
 	# Update time
 	t = t + dt
@@ -326,6 +325,7 @@ while t < par.tmax - par.dt_init:
 	n_Mg2SiO4 = Y_Mg2SiO4 * n
 	X_Mg2SiO4 = ph.A_Mg2SiO4 * Y_Mg2SiO4
 	# --------------------------------------------------------
+
 
 
 	# ----------------- Update the abundances ----------------
@@ -401,13 +401,13 @@ while t < par.tmax - par.dt_init:
 	K_SiO_rd = K_SiO_th + K_SiO_nth
 	# ------------------------------------------
 
-	if (int(t) % 10000100 < par.dt_init): print 't = ', t
+	if (int(t) % 10000100 < par.dt_init): print 't = ', t/86400., ' days'
 	i = i+1
 
 #---------------------------------------------------------#
 
 massarray = np.array([Y_grains_Cg, Y_grains_Sig, sizes_Cg, sizes_Sig, dNdt_grow_Cg, dNdt_grow_Sig]).T
-np.savetxt("runs/%s/massfile_t_%.0f.txt"%(par.directory,t), massarray, '%.5e', delimiter='   ',\
+np.savetxt("runs/%s/final_massfile_t_final.txt"%(par.directory), massarray, '%.5e', delimiter='   ',\
 			header="# Y_Cg_step     Y_Sig_step     sizes_Cg   sizes_Sig      growth rate Cg     growth rate Sig")
 
 # Save the 1d arrays for dust

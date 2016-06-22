@@ -6,8 +6,8 @@ rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 print 'dir = ', par.directory
 
-plt.rcParams['font.size'] = 16
-plt.rcParams['legend.fontsize'] = 16
+plt.rcParams['font.size'] = 25
+plt.rcParams['legend.fontsize'] = 25
 plt.rcParams['lines.linewidth'] = 2
 
 T_cs, n = np.genfromtxt("runs/%s/thermo.txt"%par.directory, unpack=True,skip_footer=1)
@@ -34,6 +34,10 @@ Y_grains_Sig, Y_grains_Sig_tot, sizes_Sig  \
 Y_grains_Cg = np.array(Y_grains_Cg[:len(t)])
 Y_grains_Cg_tot = np.array(Y_grains_Cg_tot[:len(t)])
 sizes_Cg = np.array(sizes_Cg[:len(t)])
+
+Y_grains_Sig = np.array(Y_grains_Sig[:len(t)])
+Y_grains_Sig_tot = np.array(Y_grains_Sig_tot[:len(t)])
+sizes_Sig = np.array(sizes_Sig[:len(t)])
 
 '''
 #--------- Bin the sizes: -------------

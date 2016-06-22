@@ -10,32 +10,34 @@ import sys
 
 
 T0 = 6000.
-n0 = 1.e15
+n0 = 1.e13
 R0 = 1.44e12
 v_ej = 3.21e12/ph.daytosec
-tmin = 3.*ph.daytosec
-tmax = 50.*ph.daytosec
-t = tmin
+tmin = 0.01*ph.daytosec
+tmax = 578.70*ph.daytosec
 
 R = R0
 T = T0
 n = n0
 
-thermofile = open("runs/trajPR.txt", 'w')
-thermofile = open("runs/trajPR.txt", 'a')
-thermofile.write("# t    T     n\n")
+file_floorPR = "trajectories/floorPR.dat"
+t_floorPR,dens_floorPR,temp_floorPR,Lshock_floorPR = np.genfromtxt(file_floorPR,unpack=True)
 
-thermofile.write("%.5f %.5e %.5e\n"%(t, T, n))
+days = np.zeros(15000)
+n = np.zeros(15000)
+T = np.zeros(15000)
 
-dt = 1e2
+dt = (tmax - tmin)/15000
 
-while t < par.tmax:
+t = tmin
+for i in range(0,15000):
 	t = t+dt
-	R, n, T = traj.pontefract(t,dt,R,R0,v_ej,n,n0,T,T0)
-	thermofile.write("%.5f %.5e %.5e\n"%(t, T, n))
+	R, n[i], T[i] = traj.pontefract(t,dt,R,R0,v_ej,n,n0,T,T0)
+	days[i] = t/ph.daytosec
 
 
-thermofile.close()
-
+sec = days*ph.daytosec
+arr = np.array([sec,n,T,Lshock_floorPR]).T
+np.savetxt("trajectories/PR_sphere.dat",arr,'%.7e',delimiter='   ')
 
 
