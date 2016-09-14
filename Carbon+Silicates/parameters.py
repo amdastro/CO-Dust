@@ -16,14 +16,14 @@ Y_min = 1e-5
 
 #~~~~~~~~~~~~~~~~~ Input Parameters!!
 #traj = "floorSH"
-#traj = "floorPR"
+#traj = "floorPR" # most realistic, fiducial
 #traj = "nofloor"
 #traj = "PR_fiducial"
-traj = "PR_sphere"
+traj = "PR_sphere" # this next
 
 Camt = 1
 
-epsilon = 1e-3
+epsilon = 1e-4
 #~~~~~~~~~~~~~~~~~
 
 # The total mass fraction adds to 1

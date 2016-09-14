@@ -221,7 +221,8 @@ while t < par.tmax - par.dt_init:
 		sizes_Cg[i]=ncritical_Cg
 
 	if lnsat_Sig > 0: 
-		J_Sig = (ph.cshape**3 * ph.vMg2SiO4**2 * ph.sigmaMg2SiO4/(18*np.pi**2*ph.mMg2SiO4))**(1./2.) * n_C**2 * \
+		# nucleation rate depends on key species n_Mg 9/14/16 
+		J_Sig = (ph.cshape**3 * ph.vMg2SiO4**2 * ph.sigmaMg2SiO4/(18*np.pi**2*ph.mMg2SiO4))**(1./2.) * n_Mg**2 * \
 			np.exp(-4*ph.cshape**3*ph.vMg2SiO4**2*ph.sigmaMg2SiO4**3/27./(ph.kB*T_cs)**3/lnsat_Sig**2 )
 		# Grow the previous grains
 		dNdt_grow_Sig = ph.cshape*(sizes_Sig*ph.vMg2SiO4)**(2./3.) * np.sqrt(ph.kB*T_cs/(2*np.pi*ph.mMg2SiO4)) * n_Mg

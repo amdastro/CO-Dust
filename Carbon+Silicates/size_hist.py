@@ -13,8 +13,10 @@ rc('text', usetex=True)
 
 print 'reading ', par.directory
 
-#read this to get the length of the time arracy
-t = np.genfromtxt("runs/%s/fractions.txt"%par.directory, unpack=True, usecols=(0),skip_footer=1)
+#read this to get the length of the time array
+# and the final mass fractions
+t,X_solidC,X_Mg2SiO4 \
+	= np.genfromtxt("runs/%s/fractions.txt"%par.directory, unpack=True, usecols=(0,5,9), skip_footer=1)
 
 files = []
 path = 'runs/%s/'%par.directory
@@ -50,7 +52,7 @@ for i in range(0,len(files)):
 	dNdt_grow_Sig[i] = np.array(dNdt_grow_Sig[i][:len(t)])
 
 
-bincount = 100
+bincount = 80
 
 # log size makes 
 logsizeCg   = dict()
@@ -87,22 +89,27 @@ for i in range(0,len(files)):
 		sizehistSig[i][j] = np.sum(Y_grains_Sig[i][binthis])
 		#print i,j, binthis, 'Y = ',Y_grains_Sig[i][binthis], 'sum = ', np.sum(Y_grains_Sig[i][binthis])
 
+# So sizehist*size bins is the number (fraction) of atoms that are in a particular grain size
+# X = Y * A_i to get mass fraction 
+# then multiplying y axis by a total mass will put it in units of mass normalized to some total ejecta mass
 
 a_binsCg  = dict()
 a_binsSig = dict()
-maxsizeCg = np.zeros(len(files))
-maxsizeSig = np.zeros(len(files))
+peaksizeCg = np.zeros(len(files))
+peaksizeSig = np.zeros(len(files))
 avgsizeCg = np.zeros(len(files))
 avgsizeSig = np.zeros(len(files))
 for i in range(0,len(files)):
 	a_binsCg[i] = (3.*sizebinsCg[i]/(4.*np.pi*1/ph.vC))**(1./3.) *1e4 # microns
 	a_binsSig[i] = (3.*sizebinsSig[i]/(4.*np.pi*1/ph.vMg2SiO4))**(1./3.) * 1e4
 	if np.max(sizehistCg[i] > 1e-50): 
-		maxsizeCg[i] = a_binsCg[i][np.argmax(sizehistCg[i])]
-		avgsizeCg[i] = np.mean(a_binsCg[i])
+		peaksizeCg[i] = a_binsCg[i][np.argmax(sizehistCg[i]*sizebinsCg[i])] # peak of mass dist
+		avgsizeCg[i] = np.average(a_binsCg[i],weights=sizehistCg[i]*sizebinsCg[i]) # Average by number, not by mass
+		#avgsizeCg[i]  = np.sum(a_binsCg[i]*sizehistCg[i]*sizebinsCg[i])/np.sum(sizehistCg[i]) # This is average by mass, but something might be wrong
 	if np.max(sizehistSig[i] > 1e-50): 
-		maxsizeSig[i] = a_binsSig[i][np.argmax(sizehistSig[i])]
-		avgsizeSig[i] = np.mean(a_binsSig[i]) # This is wrong
+		peaksizeSig[i] = a_binsSig[i][np.argmax(sizehistSig[i]*sizebinsSig[i])] # peak of mass dist
+		avgsizeSig[i] = np.average(a_binsSig[i],weights=sizehistSig[i]*sizebinsSig[i]) # Average by number, not by mass
+		#avgsizeSig[i]  = np.sum(a_binsSig[i]*sizehistSig[i]*sizebinsSig[i])/np.sum(sizehistSig[i]) # This is average by mass, but something is wrong
 
 
 times = np.zeros(len(files))
@@ -112,78 +119,104 @@ for i in range(0,len(files)):
 	#t_s = firstsplit[2].split(".",1)[0]
 	#times[i] = int(t_s)/86400. # Days
 
-#plt.figure(figsize=(14,6))
 
-#plt.subplot(121)
-#plt.plot(sizebinsCg[0],sizehistCg[0],alpha=0.5,linestyle='none',marker='o')
-#plt.plot(a_binsCg[0],sizehistCg[0]*sizebinsCg[0],color='#F5A9A9',linestyle='none',\
-#	marker='o',markersize=10,markeredgecolor='black')
-#plt.plot(a_binsCg[1],sizehistCg[1]*sizebinsCg[1],color='#FA5858',linestyle='none',\
-#	marker='o',markersize=10,markeredgecolor='black')
-plt.plot(a_binsCg[0],sizehistCg[0]*sizebinsCg[0],color='#084B8A',linestyle='none',alpha=0.7,\
-	marker='o',markersize=10,markeredgecolor='black',label=r'$\rm carbon \, grains$')
-plt.plot(a_binsSig[0],sizehistSig[0]*sizebinsSig[0],color='#B40431',alpha=0.7,\
-	linestyle='none',marker='p',markersize=12,markeredgecolor='black',label=r'$\rm silicates$')
+
+print ' '
+print par.directory
+print ' '
+print 'avg size Cg = ', avgsizeCg[0]
+print 'avg size Sig = ', avgsizeSig[0]
+print ' '
+print ' '
+print 'peak size Cg = ', peaksizeCg[0]
+print 'peak size Sig = ', peaksizeSig[0]
+print ' '
+
+
+def surf_area(a):
+    surf = 4.*np.pi*a**2
+    #return ['%.3f' % z for z in surf]
+    return surf
+
+
+
+# Mass dist
+
+# the y-axis hist*bins*A_i is in units of mass fraction X 
+# let's multiply it by a total mass, say 10^-4, so put it in units of Msun
+
+M_ejecta = 1e-4
+
+a_dMda_Cg  = sizehistCg[0]*sizebinsCg[0]*ph.A_C*M_ejecta
+a_dMda_Sig = sizehistSig[0]*sizebinsSig[0]*ph.A_Mg2SiO4*M_ejecta
+
+plt.scatter(a_binsCg[0],sizehistCg[0]*sizebinsCg[0]*ph.A_C*M_ejecta,color='#8856a7',alpha=1,\
+	marker='o',s=150,edgecolor='black',label=r'$\rm Carbon$')
+plt.scatter(a_binsSig[0],sizehistSig[0]*sizebinsSig[0]*ph.A_Mg2SiO4*M_ejecta,color='#e0ecf4',alpha=1,\
+	marker='d',s=160,edgecolor='black',label=r'$\rm Silicates$')
 plt.yscale('log')
 plt.xscale('log')
 plt.yticks([1e-24,1e-20,1e-16,1e-12,1e-8,1e-4,1e0])
-plt.ylim([1e-25,1e3])
-plt.xlim([1e-4,1e1])
-plt.xlabel(r'$a \, \rm [\mu m]$')
-plt.ylabel(r'$a \frac{dN}{da}$')
-plt.legend(loc=2,numpoints=1,handlelength=0)
-plt.tight_layout()
-#plt.ylabel(r'$Y_{\rm solid \, C} \, N_{\rm atoms}$')
-#plt.title(r'$\rm C$')
-#plt.title(r'$\rm C \, mass \, distribution$')
+plt.ylim([1e-25,1e-3]) # fid and Cx10
+#plt.ylim([1e-25,1e0]) # sphere
+#plt.xlim([1e-4,1.1e1])  #fid
+plt.xlim([1e-4,1.2e2]) #Cx10
+#plt.xlim([1e-4,1e-2]) #sphere
+#plt.xlabel(r'$a \, \rm [\mu m]$')
+#plt.ylabel(r'$a \frac{dM}{da} \, [M_{\odot}]$')
+plt.title(r'$\rm MASS$')
+plt.legend(loc=2,scatterpoints=1,handlelength=1,frameon=True)
+#plt.annotate(r'$\rm C\!:\!O = 0.11$', xy=(1e-2,2e-5))
+#plt.annotate(r'$\rm C\!:\!O = 1.12$', xy=(3e-2,2e-5))
+#plt.annotate(r'$\rm C\!:\!O = 0.11$', xy=(6e-4,8e-3)) #sphere
 
-'''
-plt.subplot(122)
-#plt.plot(sizebinsSig[0],sizehistSig[0],alpha=0.5,linestyle='none',marker='o')
-#plt.plot(a_binsSig[0],sizehistSig[0]*sizebinsSig[0],color='#A9BCF5',\
-#	linestyle='none',marker='o',markersize=10,markeredgecolor='black')
-#plt.plot(a_binsSig[1],sizehistSig[1]*sizebinsSig[1],color='#2E64FE',\
-#	linestyle='none',marker='o',markersize=10,markeredgecolor='black')
-plt.plot(a_binsSig[18],sizehistSig[18]*sizebinsSig[18],color='#013ADF',\
-	linestyle='none',marker='o',markersize=10,markeredgecolor='black')
-#plt.plot(a_binsSig[1],sizehistSig[1]*sizebinsSig[1],alpha=0.7,linestyle='none',marker='o')
-plt.yscale('log')
-plt.xscale('log')
-plt.ylim([1e-25,1e3])
-plt.yticks([1e-24,1e-20,1e-16,1e-12,1e-8,1e-4,1e0])
-#plt.ylim([1e-25,1e1])
-#plt.xlim([1e0,1e4])
-plt.xlabel(r'$a \, \rm [\mu m]$')
-plt.ylabel(r'$a \frac{dN}{da}$')
-#plt.ylabel(r'$Y_{\rm Mg2SiO4} \, N_{\rm molec}$')
-plt.title(r'$\rm Mg{}_2SiO{}_4$')
-#plt.title(r'$\rm Mg{}_2SiO{}_4 \, mass \, distribution$')
-'''
-'''
-
-plt.subplot(223)
-#plt.plot(times[1:],maxsizeCg[1:],marker='d',color='#DF0101',markersize=10,markeredgecolor='black')
-plt.plot(times[1:],avgsizeCg[1:],marker='d',color='#DF0101',markersize=10,markeredgecolor='black')
-plt.yscale('linear')
-plt.xlabel(r'$t \, \rm [days]$')
-#plt.ylabel(r'$a(\frac{dN}{da}_{\rm max}) \, \rm [\mu m]$')
-plt.ylabel(r'$< a > \, \rm [\mu m]$')
-
-plt.subplot(224)
-#plt.plot(times[1:],maxsizeSig[1:],marker='d',color='#013ADF',markersize=10,markeredgecolor='black')
-plt.plot(times[1:],avgsizeSig[1:],marker='d',color='#013ADF',markersize=10,markeredgecolor='black')
-plt.yscale('linear')
-plt.xlabel(r'$t \, \rm [days]$')
-#plt.ylabel(r'$a(\frac{dN}{da}_{\rm max}) \, \rm [\mu m]$')
-plt.ylabel(r'$< a > \, \rm [\mu m]$')
-plt.tight_layout()
-
-print 'X_C tot = ', np.sum(sizehistCg[0])
-print 'X_sil tot = ', np.sum(sizehistSig[0])
-'''
-plt.tight_layout()
 plt.show()
-#plt.savefig('/Users/Shark/Desktop/talk/mass_%s_dt%.0e_Cx%i_e%.0e.eps'%(par.traj,par.dt_init,par.Camt,par.epsilon),format='eps')
+
+
+
+# surface area dist
+# So now we want to put the y axis in units of cm^2, so see which size grains
+# are dominating in surface area
+# we want to plot sizehist*sizebins*ph.A_i * 3 * M_ejecta * Msun[g] = cm^2
+# Convince yourself that the *3 should be there!
+
+# a in in microns, convert to cm. 1 micron = 1e-4 cm
+
+a_dSda_Cg  = a_dMda_Cg *3*ph.Msun/a_binsCg[0]/1e-4/ph.rhoC
+a_dSda_Sig = a_dMda_Sig*3*ph.Msun/a_binsSig[0]/1e-4/ph.rhoMg2SiO4
+
+# But I think you want to plot Y_grains * surface area of that grain size ..... figure this out
+# so that would be sizehist * 4 * pi * sizebins**2
+
+'''
+plt.scatter(a_binsCg[0],a_dSda_Cg,color='#8856a7',alpha=1,\
+	marker='o',s=150,edgecolor='black',label=r'$\rm Carbon$')
+plt.scatter(a_binsSig[0],a_dSda_Sig,color='#e0ecf4',alpha=1,\
+	marker='d',s=160,edgecolor='black',label=r'$\rm Silicates$')
+plt.yscale('log')
+plt.xscale('log')
+plt.yticks([1e14,1e18,1e22,1e26,1e30,1e34]) # fid
+#plt.yticks([1e22,1e26,1e30,1e34,1e38]) # sphere
+#plt.ylim([1e20,1e40])  # sphere
+plt.ylim([1e14,1e34])  # fid and Cx10
+plt.title(r'$\rm SURFACE \, AREA$')
+plt.xlim([8e-5,1.1e1]) # fid
+#plt.xlim([1e-4,1e2])  # Cx10
+#plt.xlim([1e-4,1e-2])  # sphere
+plt.xlabel(r'$a \, \rm [\mu m]$')
+plt.ylabel(r'$a \frac{d \Sigma}{da} \, \rm [cm^2]$')
+plt.legend(loc=2,scatterpoints=1,handlelength=1,frameon=True)
+plt.annotate(r'$\rm C\!:\!O = 0.11$', xy=(8e-3,3e32)) # fid
+#plt.annotate(r'$\rm C\!:\!O = 1.12$', xy=(2e-2,3e32)) # Cx10
+#plt.annotate(r'$\rm C\!:\!O = 0.11$', xy=(6e-4,3e38)) # sphere
+plt.show()
+'''
+
+
+
+
+#plt.savefig('/Users/Shark/Dropbox/NovaDust/paper/figures/massdist_%s_Cx%i_e1e-04.pdf'%(par.traj,par.Camt))
+
 
 
 

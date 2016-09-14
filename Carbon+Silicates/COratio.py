@@ -8,11 +8,11 @@ print 'dir = ', par.directory
 
 plt.rcParams['font.size'] = 18
 plt.rcParams['legend.fontsize'] = 18
-plt.rcParams['lines.linewidth'] = 3
+plt.rcParams['lines.linewidth'] = 2
 
 # Read in directories for different epsilons
-dir1 = '%s/Cx1/dt%.1e/e%.0e'%(par.traj,par.dt_init,par.epsilon)
-dir2 = '%s/CxeqO/dt%.1e/e%.0e'%(par.traj,par.dt_init,par.epsilon)
+dir1 = '%s/Cx1/dt1.0e+03/e%.0e'%(par.traj,par.epsilon)
+dir2 = '%s/CxeqO/dt1.0e+03/e%.0e'%(par.traj,par.epsilon)
 dir3 = '%s/Cx10/dt%.1e/e%.0e'%(par.traj,par.dt_init,par.epsilon)
 
 t_1, dt_1, X_CO_1, X_C_1, X_O_1, X_solidC_1, \
@@ -32,39 +32,40 @@ t_2=t_2/86400. # days!
 t_3=t_3/86400. # days!
 
 
-plt.figure(figsize=(8,12))
-
-plt.subplot(211)
-plt.plot(t_1,X_Mg2SiO4_1,label=r'$X_{\rm Mg2SiO4}$',color='#B40431',alpha=0.9)
-plt.plot(t_1,X_solidC_1,label=r'$X_{\rm C}^{\rm solid}$',color='#084B8A',alpha=0.9)
-plt.annotate(r'${\rm Mg_2SiO_4}$',xy=(0.1*t_1[np.argmax(X_Mg2SiO4_1)],1.1*np.max(X_Mg2SiO4_1)))
-plt.annotate(r'${\rm C}_{\rm solid}$',xy=(0.1*t_1[np.argmax(X_solidC_1)],1.1*np.max(X_solidC_1)))
-plt.title(r'$\rm C:O \le 1$')
+'''
+plt.plot(t_1,X_Mg2SiO4_1,label=r'$X_{\rm Mg2SiO4}$',color='#9ebcda',alpha=1)
+plt.plot(t_1,X_solidC_1,label=r'$X_{\rm C}^{\rm solid}$',color='#8856a7',alpha=1)
+plt.annotate(r'${\rm Mg_2SiO_4}$',xy=(3.5e0,6e-14))
+plt.annotate(r'${\rm C}_{\rm solid}$',xy=(8e1,6e-14))
 plt.xscale('log')
 plt.yscale('log')
 plt.ylim([1e-14,1e0])
 plt.yticks([1e-14,1e-12,1e-10,1e-8,1e-6,1e-4,1e-2,1e0])
-plt.xlabel(r'$t \, \rm [days]$')
+plt.xlabel(r'$t - t_{\rm shock} \, \rm [days]$')
 plt.ylabel(r'${\rm mass \, fraction}$')
 plt.xlim([1e0,t_1[-1]])
+plt.annotate(r'$\rm C:O = 0.11$', xy=(1.5e1,3e-2))
+'''
 
 
-
-plt.subplot(212)
-plt.plot(t_3,X_Mg2SiO4_3,label=r'$X_{\rm Mg2SiO4}$',color='#B40431',alpha=0.9)
-plt.plot(t_3,X_solidC_3,label=r'$X_{\rm C}^{\rm solid}$',color='#084B8A',alpha=0.9)
-plt.annotate(r'${\rm Mg_2SiO_4}$',xy=(3e1,5e-5))
-plt.annotate(r'${\rm C}_{\rm solid}$',xy=(1e1,2e-2))
-plt.title(r'$\rm C:O > 1$')
+lineSi = plt.plot(t_3,X_Mg2SiO4_3,label=r'$X_{\rm Mg2SiO4}$',linestyle='--',alpha=0.9,color='black')
+lineC = plt.plot(t_3,X_solidC_3,label=r'$X_{\rm C}^{\rm solid}$',linestyle='--',alpha=0.9,color='black')
+seq = [15, 5, 15, 5]
+lineSi[0].set_dashes(seq)
+lineC[0].set_dashes(seq)
+plt.annotate(r'${\rm Mg_2SiO_4}$',xy=(2e1,8e-13),rotation=45)
+plt.annotate(r'${\rm C}_{\rm solid}$',xy=(8e0,1e-13),rotation=45)
 plt.xscale('log')
 plt.yscale('log')
 plt.ylim([1e-14,1e0])
 plt.yticks([1e-14,1e-12,1e-10,1e-8,1e-6,1e-4,1e-2,1e0])
-plt.xlabel(r'$t \, \rm [days]$')
-plt.ylabel(r'${\rm mass \, fraction}$')
+plt.xlabel(r'$t - t_{\rm shock} \, \rm [days]$')
+plt.ylabel(r'${\rm mass \, fraction} \, X$')
 plt.xlim([1e0,t_3[-1]])
+#plt.annotate(r'$\rm C:O = 1.12$', xy=(8e0,3e-2))
+plt.title(r'$\rm C\!:\!O = 1.12$')
 
-plt.tight_layout()
+
 plt.show()
 
 
